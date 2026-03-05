@@ -27,7 +27,7 @@
 
 (define (word-call! name)
   ((hash-ref *words* name
-             (λ () (error (string-append "forthe: unknown word: "
+             (λ () (error (string-append "Unknown word: "
                                          (symbol->string name)))))))
 
 ;; ── Built-in arithmetic ────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@
 
 (define (binop! f)
   (when (< (length *stack*) 2)
-    (error "forthe: stack underflow"))
+    (error "Stack underflow"))
   (define b (car *stack*))
   (define a (cadr *stack*))
   (set! *stack* (cddr *stack*))
@@ -50,17 +50,17 @@
 
 (hash-set! *words* 'DUP
   (λ ()
-    (when (< (length *stack*) 1) (error "forthe: stack underflow"))
+    (when (< (length *stack*) 1) (error "Stack underflow"))
     (push! (car *stack*))))
 
 (hash-set! *words* 'DROP
   (λ ()
-    (when (< (length *stack*) 1) (error "forthe: stack underflow"))
+    (when (< (length *stack*) 1) (error "Stack underflow"))
     (set! *stack* (cdr *stack*))))
 
 (hash-set! *words* 'SWAP
   (λ ()
-    (when (< (length *stack*) 2) (error "forthe: stack underflow"))
+    (when (< (length *stack*) 2) (error "Stack underflow"))
     (define top (car *stack*))
     (define sec (cadr *stack*))
     (set! *stack* (cddr *stack*))
@@ -70,7 +70,7 @@
 
 (hash-set! *words* 'OVER
   (λ ()
-    (when (< (length *stack*) 2) (error "forthe: stack underflow"))
+    (when (< (length *stack*) 2) (error "Stack underflow"))
     (push! (cadr *stack*))))
 
 ;; ── #%module-begin ─────────────────────────────────────────────────────────────
@@ -107,10 +107,11 @@
     (cond
       [(null? ws) (reverse acc)]
       [(equal? (car ws) ":")
+       (when (null? (cdr ws)) (error "Missing word name after :"))
        (define name (string->symbol (cadr ws)))
        (let body-loop ([rest (cddr ws)] [body '()])
          (cond
-           [(null? rest) (error "forthe: missing ; for word" name)]
+           [(null? rest) (error "Missing ;")]
            [(equal? (car rest) ";")
             (loop (cdr rest) (cons `(def ,name ,(reverse body)) acc))]
            [else (body-loop (cdr rest) (cons (parse-token (car rest)) body))]))]
