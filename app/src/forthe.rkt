@@ -5,7 +5,7 @@
 (provide
   read-syntax
   (rename-out [forthe-module-begin #%module-begin])
-  push! result define
+  push! result define void
   #%app #%datum #%top)
 
 ;; ── Stack ─────────────────────────────────────────────────────────────────────
@@ -66,5 +66,7 @@
     [(and (pair? tok) (eq? (car tok) 'def))
      (define name (cadr tok))
      (define body (caddr tok))
-     `(define (,name) ,@(map token->form body))]
+     (if (null? body)
+         `(define (,name) (void))
+         `(define (,name) ,@(map token->form body)))]
     [(symbol? tok)                        `(,tok)]))
