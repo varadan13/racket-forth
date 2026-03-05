@@ -5,7 +5,7 @@
 (provide
   read-syntax
   (rename-out [forthe-module-begin #%module-begin])
-  push! result define void
+  push! word-define! word-call! lambda void quote
   #%app #%datum #%top)
 
 ;; ── Stack ─────────────────────────────────────────────────────────────────────
@@ -15,6 +15,36 @@
 (define (push! v) (set! *stack* (cons v *stack*)))
 
 (define (result) (reverse *stack*))
+
+;; ── Word dictionary ────────────────────────────────────────────────────────────
+;; Words are stored as thunks (zero-arg functions) in a hash table.
+;; Redefinition just overwrites the old entry — FORTH semantics for free.
+
+(define *words* (make-hash))
+
+(define (word-define! name thunk)
+  (hash-set! *words* name thunk))
+
+(define (word-call! name)
+  ((hash-ref *words* name
+             (λ () (error (string-append "forthe: unknown word: "
+                                         (symbol->string name)))))))
+
+;; ── Built-in arithmetic ────────────────────────────────────────────────────────
+;; Each op pops two values (b on top, a below), computes (f a b), pushes result.
+
+(define (binop! f)
+  (when (< (length *stack*) 2)
+    (error "forthe: stack underflow"))
+  (define b (car *stack*))
+  (define a (cadr *stack*))
+  (set! *stack* (cddr *stack*))
+  (push! (f a b)))
+
+(hash-set! *words* '+ (λ () (binop! +)))
+(hash-set! *words* '- (λ () (binop! -)))
+(hash-set! *words* '* (λ () (binop! *)))
+(hash-set! *words* '/ (λ () (binop! /)))
 
 ;; ── #%module-begin ─────────────────────────────────────────────────────────────
 ;; Required so forthe.rkt can be used as a module language.
@@ -62,11 +92,13 @@
 
 (define (token->form tok)
   (cond
-    [(number? tok)                        `(push! ,tok)]
+    [(number? tok)
+     `(push! ,tok)]
     [(and (pair? tok) (eq? (car tok) 'def))
      (define name (cadr tok))
      (define body (caddr tok))
      (if (null? body)
-         `(define (,name) (void))
-         `(define (,name) ,@(map token->form body)))]
-    [(symbol? tok)                        `(,tok)]))
+         `(word-define! ',name (lambda () (void)))
+         `(word-define! ',name (lambda () ,@(map token->form body))))]
+    [(symbol? tok)
+     `(word-call! ',tok)]))
