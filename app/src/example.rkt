@@ -1,3 +1,3 @@
 #lang reader "forthe.rkt"
 
-2 3 + 4 5 + *
+: foo 6 2 / ; foo

@@ -46,6 +46,33 @@
 (hash-set! *words* '* (λ () (binop! *)))
 (hash-set! *words* '/ (λ () (binop! /)))
 
+;; ── Built-in stack ops ─────────────────────────────────────────────────────────
+
+(hash-set! *words* 'DUP
+  (λ ()
+    (when (< (length *stack*) 1) (error "forthe: stack underflow"))
+    (push! (car *stack*))))
+
+(hash-set! *words* 'DROP
+  (λ ()
+    (when (< (length *stack*) 1) (error "forthe: stack underflow"))
+    (set! *stack* (cdr *stack*))))
+
+(hash-set! *words* 'SWAP
+  (λ ()
+    (when (< (length *stack*) 2) (error "forthe: stack underflow"))
+    (define top (car *stack*))
+    (define sec (cadr *stack*))
+    (set! *stack* (cddr *stack*))
+    (push! top)  ; goes in first → ends up below
+    (push! sec)  ; goes in last  → ends up on top
+    ))
+
+(hash-set! *words* 'OVER
+  (λ ()
+    (when (< (length *stack*) 2) (error "forthe: stack underflow"))
+    (push! (cadr *stack*))))
+
 ;; ── #%module-begin ─────────────────────────────────────────────────────────────
 ;; Required so forthe.rkt can be used as a module language.
 ;; Runs all compiled forms then displays the final stack.
